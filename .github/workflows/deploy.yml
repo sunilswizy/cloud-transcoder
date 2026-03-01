@@ -32,13 +32,13 @@ jobs:
                 run: |
                     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $CONTAINER_REGISTRY
             
-            -   name: Build & Push Image to Docker Hub
-                run: |
-                    docker build -t $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG .
-                    docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG
+            # -   name: Build & Push Image to Docker Hub
+            #     run: |
+            #         docker build -t $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG .
+            #         docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG
 
-                    docker tag $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
-                    docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
+            #         docker tag $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
+            #         docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
                     
             -   name: Setup SSH
                 run: |
