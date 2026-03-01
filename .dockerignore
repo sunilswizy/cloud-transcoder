@@ -33,6 +33,7 @@ Thumbs.db
 # Git
 .git/
 .gitignore
+.github
 
 # Bytecode compiled files
 *.egg

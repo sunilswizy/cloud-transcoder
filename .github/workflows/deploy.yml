@@ -1,0 +1,54 @@
+name: Deploy Cloud Transcoder to EC2
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        env:
+            DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+            DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            EC2_USER: ${{ secrets.EC2_USER }}
+            EC2_HOST: ${{ secrets.EC2_HOST }}
+            IMAGE_TAG: ${{ github.sha }}
+
+        steps:
+            -   name: Checkout Code
+                uses: actions/checkout@v4
+            
+            -   name: Docker login
+                run: |
+                    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DOCKER_USERNAME
+            
+            -   name: Build & Push Image to Docker Hub
+                run: |
+                    docker build -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG .
+                    docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG
+
+                    docker tag $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
+                    docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
+                    
+            -   name: Setup SSH
+                run: |
+                    mkdir -p ~/.ssh
+                    cat <<EOF > ~/.ssh/id_ed25519
+                    $SSH_PRIVATE_KEY
+                    EOF
+                    chmod 600 ~/.ssh/id_ed25519
+                    ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts || true
+                    scp deploy.sh $EC2_USER@$EC2_HOST:/home/ubuntu/deploy.sh
+            
+            
+            -   name: Deploy To EC2
+                run: |
+                    ssh -o StrictHostKeyChecking=no -T -i ~/.ssh/id_ed25519 $EC2_USER@$EC2_HOST <<EOF
+                        chmod +x /home/ubuntu/deploy.sh
+
+                        bash /home/ubuntu/deploy.sh $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG
+
+                        rm /home/ubuntu/deploy.sh
+                    EOF
