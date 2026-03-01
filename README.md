@@ -107,7 +107,7 @@ This ensures:
 * **GitHub Actions (CI/CD)**
 ---
 
-## 🧪 Local Development
+## Local Development
 
 ```bash
 pip install -r requirements.txt
@@ -135,8 +135,9 @@ Requirements:
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 **Sunil**
 Software Engineer.
 ---
+
