@@ -55,6 +55,9 @@ jobs:
                 run: |
                     ssh -o StrictHostKeyChecking=no -T -i ~/.ssh/id_ed25519 $EC2_USER@$EC2_HOST <<EOF
                         chmod +x /home/ubuntu/deploy.sh
+                        
+                        echo "Docker login"
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $CONTAINER_REGISTRY
 
                         bash /home/ubuntu/deploy.sh $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG
 
