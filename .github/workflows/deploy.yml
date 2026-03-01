@@ -9,8 +9,11 @@ jobs:
     deploy:
         runs-on: ubuntu-latest
         env:
-            DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+            CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
             DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION: ${{ secrets.AWS_REGION }}
             SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             EC2_USER: ${{ secrets.EC2_USER }}
             EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -20,17 +23,24 @@ jobs:
             -   name: Checkout Code
                 uses: actions/checkout@v4
             
+            -   name: Configure AWS credentials
+                uses: aws-actions/configure-aws-credentials@v4
+                with:
+                    aws-access-key-id: $AWS_ACCESS_KEY_ID
+                    aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
+                    aws-region: $AWS_REGION
+            
             -   name: Docker login
                 run: |
-                    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DOCKER_USERNAME
+                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $CONTAINER_REGISTRY
             
             -   name: Build & Push Image to Docker Hub
                 run: |
-                    docker build -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG .
-                    docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG
+                    docker build -t $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG .
+                    docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG
 
-                    docker tag $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
-                    docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
+                    docker tag $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
+                    docker push $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:latest
                     
             -   name: Setup SSH
                 run: |
@@ -48,7 +58,7 @@ jobs:
                     ssh -o StrictHostKeyChecking=no -T -i ~/.ssh/id_ed25519 $EC2_USER@$EC2_HOST <<EOF
                         chmod +x /home/ubuntu/deploy.sh
 
-                        bash /home/ubuntu/deploy.sh $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$IMAGE_TAG
+                        bash /home/ubuntu/deploy.sh $CONTAINER_REGISTRY/$DOCKER_IMAGE_NAME:$IMAGE_TAG
 
                         rm /home/ubuntu/deploy.sh
                     EOF
