@@ -15,6 +15,7 @@ jobs:
             SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             EC2_USER: ${{ secrets.EC2_USER }}
             EC2_HOST: ${{ secrets.EC2_HOST }}
+            APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
             IMAGE_TAG: ${{ github.sha }}
 
         steps:
@@ -55,6 +56,13 @@ jobs:
                 run: |
                     ssh -o StrictHostKeyChecking=no -T -i ~/.ssh/id_ed25519 $EC2_USER@$EC2_HOST <<EOF
                         chmod +x /home/ubuntu/deploy.sh
+
+                        echo "Creating a env file"
+                        cat <<EOT > /home/ubuntu/cloud-transcoder.env
+                            ${{ secrets.APP_ENV_FILE }}
+                        EOT
+
+                        chmod 600 /home/ubuntu/cloud-transcoder.env
                         
                         echo "Docker login"
                         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $CONTAINER_REGISTRY
